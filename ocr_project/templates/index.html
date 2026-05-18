@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Umi-OCR 网页版</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Umi-OCR 网页版</h1>
+            <p>基于 PaddleOCR 的在线文字识别服务</p>
+        </header>
+
+        <div class="app-container">
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="fileInput" accept="image/*" hidden>
+                <div class="drop-zone" id="dropZone">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p>拖放图片到此处或 <span class="browse-link">浏览文件</span></p>
+                </div>
+                <div class="options">
+                    <label>
+                        <input type="checkbox" id="keepFormatting" checked>
+                        保留原始格式
+                    </label>
+                </div>
+                <button id="processBtn" class="btn" disabled>开始识别</button>
+            </div>
+
+            <div class="result-area" id="resultArea">
+                <!-- 添加的能耗等级显示区域 -->
+                <div class="energy-level-container" id="energyLevelContainer">
+                    <div class="energy-level-display" id="energyLevelDisplay">
+                        能效等级识别结果将显示在这里
+                    </div>
+                </div>
+
+                <div class="tabs">
+                    <button class="tab active" data-tab="text">识别文本</button>
+                    <button class="tab" data-tab="json">JSON 结果</button>
+                </div>
+
+                <div class="tab-content">
+                    <div id="textResult" class="tab-pane active">
+                        <div class="result-container">
+                            <textarea id="textOutput" readonly placeholder="识别结果将显示在这里"></textarea>
+                            <button id="copyTextBtn" class="btn secondary">复制文本</button>
+                        </div>
+                    </div>
+
+                    <div id="jsonResult" class="tab-pane">
+                        <div class="result-container">
+                            <pre id="jsonOutput"></pre>
+                            <button id="copyJsonBtn" class="btn secondary">复制 JSON</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-container" id="previewContainer">
+                    <div class="image-preview" id="imagePreview">
+                        <img id="previewImage" src="" alt="预览图">
+                        <div class="loading-overlay" id="loadingOverlay">
+                            <div class="spinner"></div>
+                            <p>识别中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Powered by PaddleOCR & FastAPI | © 2025 Umi-OCR</p>
+        </footer>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

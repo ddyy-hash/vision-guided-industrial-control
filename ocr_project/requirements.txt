@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+jinja2
+python-multipart
+loguru
+numpy
+opencv-python
+Pillow
+scipy
+ultralytics

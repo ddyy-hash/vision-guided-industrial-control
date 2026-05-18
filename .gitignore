@@ -29,7 +29,11 @@ venv/
 *.db
 *.sqlite
 *.sqlite3
-backend/pairing_records.json
+industrial-control-platform-2/backend/pairing_records.json
+ocr_project/logs/
+ocr_project/temp/
+ocr_project/paddleocr_json/
+ocr_project/analysis_report_*/
 
 # Editor directories and files
 .vscode/*
