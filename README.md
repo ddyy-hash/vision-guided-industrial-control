@@ -2,13 +2,21 @@
 
 This repository documents an industrial water-line control platform built around PLC coordination, visual tracking, robot-arm control, conveyor control, MQTT messaging, and a standalone OCR service. It includes runnable source code, Arduino firmware, demo media, exported system diagrams, and reference material for reviewing the complete implementation.
 
-## Demo Video
+## Demo Animations
 
-The full demonstration is provided as a silent GIF so it renders directly inside the GitHub README.
+The project demonstrations are provided as silent GIFs so they render directly inside the GitHub README.
+
+### Full System Demo
 
 ![Full demo animation](docs/media/demo_video.gif)
 
 Source MP4: [docs/media/demo_video.mp4](docs/media/demo_video.mp4)
+
+### Tracking And Control Clip
+
+![Presentation clip animation](docs/media/presentation_clip.gif)
+
+Source MP4: [docs/media/presentation_clip.mp4](docs/media/presentation_clip.mp4)
 
 ## Repository Map
 
@@ -84,12 +92,6 @@ The frontend MQTT topic definitions are in [frontend/src/api/mqttApi.ts](industr
 ### Overall Architecture
 
 ![Architecture slide](docs/media/slides/slide-19-architecture.png)
-
-## Additional Demo Clip
-
-![Presentation clip animation](docs/media/presentation_clip.gif)
-
-Source MP4: [docs/media/presentation_clip.mp4](docs/media/presentation_clip.mp4)
 
 ## Repository Structure
 
