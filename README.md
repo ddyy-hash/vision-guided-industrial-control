@@ -23,7 +23,7 @@ Source MP4: [docs/media/presentation_clip.mp4](docs/media/presentation_clip.mp4)
 - [Industrial control platform](industrial-control-platform-2/README.md): Vue dashboard, Flask backend, conveyor workflow, robot-arm control, tracking services, MQTT integration, and Arduino firmware.
 - [OCR microservice](ocr_project/README.md): standalone FastAPI service for OCR and energy-label recognition.
 - [MQTT setup guide](industrial-control-platform-2/MQTT_INSTALLATION_GUIDE.md): broker setup, ports, topics, and connection checks.
-- [Competition paper PDF](docs/reference/competition-paper.pdf) and [DOCX](docs/reference/competition-paper.docx): reference description of the design background and outcomes.
+- [Technical report PDF](docs/reference/technical-report.pdf) and [DOCX](docs/reference/technical-report.docx): reference description of the design background and outcomes.
 
 ## System Overview
 
@@ -118,7 +118,7 @@ vision-guided-industrial-control/
     README.md                  Main platform module documentation
   ocr_project/                 Standalone OCR and energy-label microservice
   docs/media/                  Demo videos, GIF renderings, and exported presentation slides
-  docs/reference/              Competition paper and supporting material
+  docs/reference/              Technical report and supporting material
   README.md                    Overall project documentation
 ```
 
@@ -173,7 +173,6 @@ python -m compileall -q .
 - The bundled YOLO model at `industrial-control-platform-2/backend/model/best.pt` is kept so the tracking workflow can be reviewed and demonstrated more easily.
 - The OCR microservice keeps its own YOLO model in `ocr_project/models/yolo_energy_label.pt`.
 - The full `paddleocr_json` Windows runtime is intentionally not vendored because it contains large third-party binaries. The OCR module documents how to attach it locally.
-- The original competition slide deck is not committed because the raw `.pptx` exceeds GitHub's single-file limit. Exported slide images and reference documents are included instead.
 
 ## Intellectual Property Notice
 
