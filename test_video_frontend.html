@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频流测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .video-container {
+            width: 100%;
+            max-width: 640px;
+            height: 480px;
+            background: #000;
+            border: 2px solid #333;
+            border-radius: 4px;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+        .video-frame {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            text-align: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 5px;
+        }
+        .log-info { color: #007bff; }
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-warning { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 视频流测试页面</h1>
+        <p>这个页面用于测试和验证视频流功能是否正常工作。</p>
+
+        <div class="controls">
+            <button id="startBtn" onclick="startTracking()">开始追踪</button>
+            <button id="stopBtn" onclick="stopTracking()" disabled>停止追踪</button>
+            <button onclick="clearLog()">清空日志</button>
+        </div>
+
+        <div class="status" id="status">
+            状态: <span id="statusText">未连接</span>
+        </div>
+
+        <div class="video-container" id="videoContainer">
+            <span id="videoPlaceholder">点击"开始追踪"启动视频流</span>
+            <img id="videoFrame" class="video-frame" style="display: none;" alt="视频流">
+        </div>
+
+        <div class="log" id="log">
+            <div class="log-entry log-info">日志系统已启动</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        let socket = null;
+        let currentFrame = null;
+        let frameCount = 0;
+        let startTime = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(text, type = 'info') {
+            document.getElementById('statusText').textContent = text;
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+        }
+
+        function startTracking() {
+            log('开始连接WebSocket...', 'info');
+            updateStatus('正在连接...', 'info');
+
+            try {
+                socket = io('http://localhost:5000', {
+                    transports: ['websocket'],
+                    reconnection: true,
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 1000,
+                });
+
+                socket.on('connect', () => {
+                    log(`✅ WebSocket已连接 (ID: ${socket.id})`, 'success');
+                    updateStatus('已连接', 'success');
+
+                    log('发送开始追踪命令...', 'info');
+                    socket.emit('start_tracking', { camera_source: 0 });
+                });
+
+                socket.on('disconnect', () => {
+                    log('❌ WebSocket已断开', 'error');
+                    updateStatus('已断开', 'error');
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                });
+
+                socket.on('connect_error', (error) => {
+                    log(`❌ WebSocket连接错误: ${error.message}`, 'error');
+                    updateStatus('连接错误', 'error');
+                });
+
+                socket.on('tracking_status', (data) => {
+                    log(`追踪状态: ${data.status} - ${data.message}`, 'info');
+                    if (data.status === 'running') {
+                        document.getElementById('startBtn').disabled = true;
+                        document.getElementById('stopBtn').disabled = false;
+                    }
+                });
+
+                socket.on('video_frame', (data) => {
+                    frameCount++;
+                    const frameLength = data.frame ? data.frame.length : 0;
+                    const fps = data.fps || 0;
+
+                    log(`📹 收到视频帧 #${frameCount} - 长度: ${frameLength}, FPS: ${fps}`, 'info');
+
+                    if (data.frame && data.frame.length > 100) {
+                        currentFrame = data.frame;
+                        displayFrame();
+
+                        if (frameCount === 1) {
+                            startTime = Date.now();
+                            log('🎬 第一帧已显示', 'success');
+                        }
+                    } else {
+                        log(`⚠️ 视频帧数据无效 (长度: ${frameLength})`, 'warning');
+                    }
+                });
+
+                socket.on('frame_processed', (data) => {
+                    const frameData = data.frame_data || {};
+                    log(`🔄 帧处理完成 #${frameData.frame_id} - 检测: ${frameData.detections || 0}`, 'info');
+                });
+
+                socket.on('object_detected', (data) => {
+                    const obj = data.object || {};
+                    log(`🔍 检测到物体: ID=${obj.track_id}, 类别=${obj.class_name}`, 'info');
+                });
+
+                socket.on('object_lost', (data) => {
+                    const obj = data.object || {};
+                    log(`👋 物体丢失: ID=${obj.track_id}, 类别=${obj.class_name}`, 'warning');
+                });
+
+            } catch (error) {
+                log(`❌ 启动失败: ${error.message}`, 'error');
+                updateStatus('启动失败', 'error');
+            }
+        }
+
+        function stopTracking() {
+            if (socket) {
+                log('发送停止追踪命令...', 'info');
+                socket.emit('stop_tracking');
+
+                setTimeout(() => {
+                    socket.disconnect();
+                    socket = null;
+                    currentFrame = null;
+                    frameCount = 0;
+                    hideFrame();
+                    log('追踪已停止', 'info');
+                }, 1000);
+            }
+        }
+
+        function displayFrame() {
+            const img = document.getElementById('videoFrame');
+            const placeholder = document.getElementById('videoPlaceholder');
+
+            if (currentFrame) {
+                img.src = currentFrame;
+                img.style.display = 'block';
+                placeholder.style.display = 'none';
+
+                if (startTime) {
+                    const runTime = Math.floor((Date.now() - startTime) / 1000);
+                    updateStatus(`运行中 - 帧数: ${frameCount}, 时间: ${runTime}s`, 'success');
+                }
+            }
+        }
+
+        function hideFrame() {
+            const img = document.getElementById('videoFrame');
+            const placeholder = document.getElementById('videoPlaceholder');
+
+            img.style.display = 'none';
+            placeholder.style.display = 'block';
+            placeholder.textContent = '视频流已停止';
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '<div class="log-entry log-info">日志已清空</div>';
+        }
+
+        window.onload = function() {
+            log('页面加载完成，准备测试视频流功能', 'info');
+            log('请确保后端服务正在运行 (http://localhost:5000)', 'info');
+        };
+    </script>
+</body>
+</html>

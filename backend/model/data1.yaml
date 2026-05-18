@@ -1,0 +1,8 @@
+# YOLO dataset configuration.
+# Replace the path with the dataset location used for training.
+path: ../../datasets/yolo_dataset
+train: images/train
+val: images/val
+
+nc: 2
+names: ['brick', 'arm']
