@@ -1,183 +1,168 @@
-# MQTT代理安装和配置指南
+# MQTT Setup And Integration Guide
 
-## 问题描述
-测试显示MQTT代理未运行，导致连接被拒绝错误：
+This guide explains how MQTT fits into the industrial control platform and how to run a local broker for testing. It is linked from the root [README.md](../README.md), the platform [README.md](README.md), and the OCR module [README.md](../ocr_project/README.md).
+
+## Role In The System
+
+MQTT is used as a decoupled communication layer for telemetry, tracking results, system status, control commands, OCR events, and alert messages. REST APIs and Socket.IO are still used by the dashboard, but MQTT makes it easier to connect additional clients, testing tools, or external industrial components without coupling them directly to the web backend.
+
+## Relevant Code
+
+- Backend MQTT service: [backend/services/mqtt_service.py](backend/services/mqtt_service.py)
+- Tracking MQTT publishing hook: [backend/services/tracking_service.py](backend/services/tracking_service.py)
+- Frontend MQTT API: [frontend/src/api/mqttApi.ts](frontend/src/api/mqttApi.ts)
+- Frontend environment template: [.env.example](.env.example)
+
+## Default Broker Settings
+
+Backend defaults:
+
+```text
+host: localhost
+port: 1883
+client_id prefix: conveyor_tracking_system
 ```
-[WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+Frontend environment placeholder:
+
+```text
+VITE_MQTT_URL=ws://localhost:8083/mqtt
 ```
 
-## 解决方案
+The current frontend MQTT API also contains a local development configuration using `localhost:1883`. If a browser client needs direct MQTT-over-WebSocket access, configure the broker with a WebSocket listener such as `8083` and align the frontend connection settings.
 
-### 方法1：安装Mosquitto MQTT代理（推荐）
+## Backend Topics
 
-#### Windows系统
-1. **下载安装包**
-   - 访问：https://mosquitto.org/download/
-   - 下载Windows版本的Mosquitto
+The backend MQTT service defines these conveyor-oriented topics:
 
-2. **安装步骤**
-   - 运行下载的安装程序
-   - 安装到默认路径（如：`C:\Program Files\mosquitto`）
-   - 确保安装过程中选择"安装为Windows服务"
+```text
+conveyor/tracking/video
+conveyor/tracking/objects
+conveyor/tracking/stats
+conveyor/system/status
+conveyor/control/commands
+conveyor/alerts/errors
+```
 
-3. **启动服务**
-   ```cmd
-   # 以管理员身份运行命令提示符
-   net start mosquitto
-   ```
+## Frontend Topics
 
-4. **验证安装**
-   ```cmd
-   # 检查服务状态
-   sc query mosquitto
+The frontend MQTT API defines dashboard-facing topics:
 
-   # 测试连接
-   mosquitto_sub -h localhost -t test
-   ```
+```text
+camera/video_frame
+camera/video_frame_binary
+tracking/object_data
+tracking/object_detected
+tracking/object_lost
+tracking/stats
+system/status
+ocr/triggered
+ocr/result
+control/command
+```
 
-#### Linux系统 (Ubuntu/Debian)
+## Option 1: Run Mosquitto On Windows
+
+1. Download Mosquitto from <https://mosquitto.org/download/>.
+2. Install it with the Windows service option enabled.
+3. Start the service from an administrator terminal:
+
+```cmd
+net start mosquitto
+```
+
+4. Check the service:
+
+```cmd
+sc query mosquitto
+```
+
+## Option 2: Run Mosquitto With Docker
+
 ```bash
-# 安装Mosquitto
-sudo apt update
-sudo apt install mosquitto mosquitto-clients
-
-# 启动服务
-sudo systemctl start mosquitto
-sudo systemctl enable mosquitto
-
-# 验证安装
-sudo systemctl status mosquitto
-```
-
-#### macOS系统
-```bash
-# 使用Homebrew安装
-brew install mosquitto
-
-# 启动服务
-brew services start mosquitto
-```
-
-### 方法2：使用Docker运行MQTT代理
-
-#### 安装Docker
-1. 下载Docker Desktop：https://www.docker.com/products/docker-desktop
-2. 安装并启动Docker
-
-#### 运行MQTT容器
-```bash
-# 拉取Eclipse Mosquitto镜像
 docker pull eclipse-mosquitto
-
-# 运行MQTT代理
-docker run -d -p 1883:1883 -p 9001:9001 --name mosquitto eclipse-mosquitto
-
-# 验证运行
-docker ps
+docker run -d --name mosquitto -p 1883:1883 -p 8083:8083 eclipse-mosquitto
 ```
 
-### 方法3：使用Python内置MQTT代理（开发测试用）
+For browser MQTT-over-WebSocket tests, provide a Mosquitto configuration that enables a WebSocket listener. A minimal local-development configuration is:
 
-创建一个简单的MQTT代理用于测试：
-
-```python
-# backend/start_mqtt_broker.py
-import asyncio
-import websockets
-import json
-
-async def mqtt_broker(websocket, path):
-    print("MQTT代理已启动")
-    try:
-        async for message in websocket:
-            print(f"收到消息: {message}")
-            # 这里可以添加消息处理逻辑
-    except websockets.exceptions.ConnectionClosed:
-        print("客户端断开连接")
-
-start_server = websockets.serve(mqtt_broker, "localhost", 1883)
-
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().run_forever()
-```
-
-## 验证MQTT代理运行
-
-### 测试连接
-```bash
-# 发布测试消息
-mosquitto_pub -h localhost -t "test/topic" -m "Hello MQTT"
-
-# 订阅测试消息
-mosquitto_sub -h localhost -t "test/topic"
-```
-
-### 使用Python测试
-```python
-import paho.mqtt.client as mqtt
-
-def test_connection():
-    client = mqtt.Client()
-    try:
-        client.connect("localhost", 1883, 60)
-        print("✓ MQTT代理连接成功")
-        return True
-    except Exception as e:
-        print(f"✗ MQTT代理连接失败: {e}")
-        return False
-
-test_connection()
-```
-
-## 故障排除
-
-### 常见问题
-
-1. **端口被占用**
-   ```bash
-   # 检查1883端口
-   netstat -an | findstr 1883
-
-   # 如果被占用，可以修改Mosquitto配置使用其他端口
-   ```
-
-2. **防火墙阻止**
-   - 确保防火墙允许1883端口通信
-   - Windows: 在Windows Defender防火墙中添加例外
-
-3. **服务启动失败**
-   ```bash
-   # 查看服务日志
-   journalctl -u mosquitto.service  # Linux
-   # 或检查Windows事件查看器
-   ```
-
-### 配置修改
-
-如果需要修改默认配置，编辑Mosquitto配置文件：
-
-**Windows**: `C:\Program Files\mosquitto\mosquitto.conf`
-**Linux**: `/etc/mosquitto/mosquitto.conf`
-
-添加以下配置允许匿名连接（仅用于开发）：
-```
+```text
 listener 1883
+protocol mqtt
+allow_anonymous true
+
+listener 8083
+protocol websockets
 allow_anonymous true
 ```
 
-## 下一步
+Mount that configuration into the container if WebSocket access is required.
 
-1. 安装并启动MQTT代理
-2. 运行测试脚本验证连接：
-   ```bash
-   python backend/test_mqtt_broker.py
-   python backend/test_mqtt_integration.py
-   ```
-3. 启动后端服务测试完整功能
-4. 启动前端应用测试MQTT通信
+## Option 3: Install On Linux Or macOS
 
-## 注意事项
+Ubuntu or Debian:
 
-- 生产环境请配置认证和加密
-- 开发环境可以使用匿名连接简化测试
-- 确保防火墙配置允许MQTT通信
+```bash
+sudo apt update
+sudo apt install mosquitto mosquitto-clients
+sudo systemctl start mosquitto
+sudo systemctl enable mosquitto
+```
+
+macOS with Homebrew:
+
+```bash
+brew install mosquitto
+brew services start mosquitto
+```
+
+## Connection Checks
+
+In one terminal, subscribe to a test topic:
+
+```bash
+mosquitto_sub -h localhost -p 1883 -t "test/topic"
+```
+
+In another terminal, publish a message:
+
+```bash
+mosquitto_pub -h localhost -p 1883 -t "test/topic" -m "Hello MQTT"
+```
+
+You can also run the project test helpers when available:
+
+```bash
+python backend/test_mqtt_broker.py
+python backend/test_mqtt_integration.py
+```
+
+## Troubleshooting
+
+- Connection refused: confirm the broker is running and listening on `1883`.
+- Browser MQTT failure: confirm the broker has a WebSocket listener, usually `8083`, and that the frontend URL matches it.
+- Port already in use: check `netstat -ano | findstr 1883` on Windows or `lsof -i :1883` on Unix-like systems.
+- Authentication failure: either configure valid credentials in the broker and client settings or enable anonymous access for local-only testing.
+- Firewall issues: allow local traffic for the selected MQTT and WebSocket ports.
+
+## Local Run Order
+
+1. Start the MQTT broker.
+2. Start the Flask backend:
+
+```bash
+python backend/app.py
+```
+
+3. Start the Vue frontend:
+
+```bash
+npm run dev
+```
+
+4. Start the OCR service only when OCR endpoints are needed:
+
+```bash
+cd ..\ocr_project
+uvicorn main:app --host 127.0.0.1 --port 8000
+```

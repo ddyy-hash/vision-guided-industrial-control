@@ -1,13 +1,20 @@
 # OCR Microservice
 
-This module is a standalone OCR and energy-label recognition service used by the industrial control platform. It provides HTTP endpoints for image OCR, base64 OCR, and energy-label analysis.
+This module is a standalone OCR and energy-label recognition service used by the vision-guided industrial control platform. It exposes HTTP endpoints for image OCR, base64 OCR, and energy-label analysis while keeping OCR runtime dependencies separate from the main control backend.
+
+Related documentation:
+
+- Overall project overview: [../README.md](../README.md)
+- Main control platform: [../industrial-control-platform-2/README.md](../industrial-control-platform-2/README.md)
+- MQTT setup and validation: [../industrial-control-platform-2/MQTT_INSTALLATION_GUIDE.md](../industrial-control-platform-2/MQTT_INSTALLATION_GUIDE.md)
 
 ## Responsibilities
 
-- Run OCR through a local PaddleOCR-json runtime
-- Apply optional YOLO-assisted region extraction before OCR
-- Expose FastAPI endpoints for OCR and energy-label detection
-- Return debug artifacts for inspection and integration testing
+- Run OCR through a local PaddleOCR-json runtime.
+- Apply optional YOLO-assisted region extraction before OCR.
+- Expose FastAPI endpoints for OCR and energy-label detection.
+- Return debug artifacts for inspection and integration testing.
+- Serve as an independent service that can be called by the main Flask backend.
 
 ## Layout
 
@@ -48,9 +55,25 @@ pip install -r requirements.txt
 uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
+Default service URL:
+
+- `http://localhost:8000`
+
 ## Example Endpoints
 
 - `POST /api/ocr/image`
 - `POST /api/ocr/base64`
 - `GET /api/ocr/health`
 - `POST /api/energy/detect`
+
+## Main Platform Integration
+
+The main Flask backend calls this service through the OCR proxy code in [../industrial-control-platform-2/backend/api/energy_ocr.py](../industrial-control-platform-2/backend/api/energy_ocr.py). This keeps the industrial control backend lighter and allows OCR dependencies to be started only when recognition features are required.
+
+OCR-related events can also be surfaced in the wider system through the MQTT topic layer documented in [../industrial-control-platform-2/MQTT_INSTALLATION_GUIDE.md](../industrial-control-platform-2/MQTT_INSTALLATION_GUIDE.md).
+
+## Verification
+
+```bash
+python -m compileall -q .
+```
