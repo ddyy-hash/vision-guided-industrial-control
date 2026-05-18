@@ -43,6 +43,17 @@ The implementation is designed to show the complete engineering chain: camera in
 5. OCR tasks are routed to the standalone OCR microservice when energy-label or text recognition is required.
 6. The frontend dashboard displays control state, tracking results, device status, and integration feedback.
 
+## Control Implementation Highlights
+
+- Project-specific Arduino firmware is included for both the conveyor and the robot arm, rather than treating the hardware as a black-box simulator.
+- The conveyor firmware receives serial speed and direction commands from the Flask backend, then converts physical belt speed in `m/s` into stepper pulse frequency using `STEPS_PER_REV` and `BELT_PER_REV`.
+- The conveyor motor is driven through a `PUL/DIR` stepper interface with AccelStepper, which makes the backend speed command directly traceable to motor pulse output.
+- The robot-arm firmware implements a custom binary serial protocol with the `0xA5 0x5A` frame header, servo count, movement time, servo ID, and pulse-width payload.
+- The Arduino robot-arm controller drives servos with `writeMicroseconds()` and applies 20 ms incremental updates for smoother multi-servo motion.
+- The Python backend maps joint angles into calibrated `500-2500 us` PWM pulse ranges and can send batched multi-servo commands over the same protocol.
+- The inverse-kinematics layer converts target `(x, y, z)` position and pitch into servo angles and pulse commands using measured link lengths and reachable-range checks.
+- The full control path is visible in the repository: dashboard command -> Flask API -> serial protocol or MQTT/Socket.IO event -> Arduino firmware -> stepper motor or servo output.
+
 ## Communication And MQTT
 
 The platform uses multiple communication layers because different parts of the system have different timing and integration needs:
@@ -66,9 +77,10 @@ The frontend MQTT topic definitions are in [frontend/src/api/mqttApi.ts](industr
 ### Hardware And Firmware
 
 - XINJE PLC-centered conveyor-control workflow
-- Arduino firmware for conveyor control: [hardware/arduino/belt/belt.ino](industrial-control-platform-2/hardware/arduino/belt/belt.ino)
-- Arduino firmware for robot-arm control: [hardware/arduino/robot_arm/robotarm0724.ino](industrial-control-platform-2/hardware/arduino/robot_arm/robotarm0724.ino)
-- Serial communication for robotic actuators and industrial peripherals
+- Arduino conveyor firmware with stepper pulse conversion: [hardware/arduino/belt/belt.ino](industrial-control-platform-2/hardware/arduino/belt/belt.ino)
+- Arduino robot-arm firmware with a custom servo protocol: [hardware/arduino/robot_arm/robotarm0724.ino](industrial-control-platform-2/hardware/arduino/robot_arm/robotarm0724.ino)
+- Python serial protocol bridge and inverse-kinematics driver: [backend/api/robot_arm.py](industrial-control-platform-2/backend/api/robot_arm.py)
+- Serial communication for robotic actuators, conveyor hardware, and industrial peripherals
 - Camera-based inspection and tracking pipeline
 
 ## System Diagrams And Evidence

@@ -40,6 +40,19 @@ industrial-control-platform-2/
 - Communication: REST APIs, Socket.IO events, MQTT topics
 - Hardware: PLC-centered workflow plus Arduino firmware for selected components
 
+## Control Implementation Details
+
+The hardware layer is implemented with project-specific firmware and backend protocol adapters:
+
+- Conveyor backend adapter: [backend/api/belt.py](backend/api/belt.py) sends speed and direction commands over serial.
+- Conveyor Arduino firmware: [hardware/arduino/belt/belt.ino](hardware/arduino/belt/belt.ino) converts `m/s` into stepper pulses with `(targetSpeed / BELT_PER_REV) * STEPS_PER_REV`, then drives the motor through a `PUL/DIR` interface with AccelStepper.
+- Robot-arm serial bridge: [backend/api/Communication.py](backend/api/Communication.py) builds binary servo command frames with the `0xA5 0x5A` header, movement time, servo IDs, and pulse-width values.
+- Robot-arm controller: [backend/api/robot_arm.py](backend/api/robot_arm.py) maps joint angles into calibrated `500-2500 us` PWM pulses and supports batched multi-servo movement.
+- Robot-arm Arduino firmware: [hardware/arduino/robot_arm/robotarm0724.ino](hardware/arduino/robot_arm/robotarm0724.ino) parses the custom serial frame and drives servos with `writeMicroseconds()` using 20 ms smoothing updates.
+- Inverse kinematics: [backend/api/IK.py](backend/api/IK.py) and [backend/api/ArmIK.py](backend/api/ArmIK.py) convert target position and pitch into reachable servo angles using the measured link-length model.
+
+This makes the control path reviewable from the web dashboard down to the generated motor and servo pulses.
+
 ## MQTT Integration
 
 MQTT is used for decoupled realtime data and command exchange. The backend service defines conveyor-oriented topics such as:
@@ -82,6 +95,8 @@ Default endpoints:
 
 - Conveyor firmware: [hardware/arduino/belt/belt.ino](hardware/arduino/belt/belt.ino)
 - Robot-arm firmware: [hardware/arduino/robot_arm/robotarm0724.ino](hardware/arduino/robot_arm/robotarm0724.ino)
+- Servo serial protocol bridge: [backend/api/Communication.py](backend/api/Communication.py)
+- Inverse-kinematics driver: [backend/api/IK.py](backend/api/IK.py), [backend/api/ArmIK.py](backend/api/ArmIK.py)
 
 ## OCR Connection
 
