@@ -4,11 +4,11 @@ This repository documents an industrial water-line control platform built around
 
 ## Demo Video
 
-The full demonstration video is embedded here for direct playback on GitHub.
+The full demonstration is provided as a silent GIF so it renders directly inside the GitHub README.
 
-<video src="https://github.com/ddyy-hash/vision-guided-industrial-control/raw/main/docs/media/demo_video.mp4" controls width="100%"></video>
+![Full demo animation](docs/media/demo_video.gif)
 
-Direct link: [docs/media/demo_video.mp4](docs/media/demo_video.mp4)
+Source MP4: [docs/media/demo_video.mp4](docs/media/demo_video.mp4)
 
 ## Repository Map
 
@@ -87,9 +87,9 @@ The frontend MQTT topic definitions are in [frontend/src/api/mqttApi.ts](industr
 
 ## Additional Demo Clip
 
-<video src="https://github.com/ddyy-hash/vision-guided-industrial-control/raw/main/docs/media/presentation_clip.mp4" controls width="100%"></video>
+![Presentation clip animation](docs/media/presentation_clip.gif)
 
-Direct link: [docs/media/presentation_clip.mp4](docs/media/presentation_clip.mp4)
+Source MP4: [docs/media/presentation_clip.mp4](docs/media/presentation_clip.mp4)
 
 ## Repository Structure
 
@@ -103,7 +103,7 @@ vision-guided-industrial-control/
     MQTT_INSTALLATION_GUIDE.md MQTT broker setup and validation guide
     README.md                  Main platform module documentation
   ocr_project/                 Standalone OCR and energy-label microservice
-  docs/media/                  Demo videos and exported presentation slides
+  docs/media/                  Demo videos, GIF renderings, and exported presentation slides
   docs/reference/              Competition paper and supporting material
   README.md                    Overall project documentation
 ```
